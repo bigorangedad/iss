@@ -1,10 +1,13 @@
 import json
+import logging
 import random
 import re
 import time
 from logging import log
 import pytest
 import requests
+
+logging.basicConfig(level=logging.INFO)
 
 
 class TestLogin:
@@ -219,6 +222,7 @@ class TestLogin:
         print(shop_list)
         return shop_list
 
+    # @pytest.mark.parametrize()
     def test_complete_shop_build_task(self, shopname, token):
         """
         审核建设任务通过
@@ -272,7 +276,7 @@ class TestLogin:
             "shopConstructionId": 37
         }
         res = requests.put(url=url + f"{self.test_query_shop_build_task_list(shopname, token)['shop_build_id']}",
-                           json=payload, \
+                           json=payload,
                            headers=headers, cookies=cookies)
         print(f"提交施工: {res.json()}")
 
@@ -491,18 +495,32 @@ class TestLogin:
         try:
             assert 0 == self.test_add_shop_build_task(shopname, token)["code"]
         except Exception as e:
-            while '网点名称已经存在' in e.__str__():
-                assert 0 == self.test_add_shop_build_task(shopname, token)["code"]
+            for i in range(0, 5):
+                while '网点名称已经存在' in e.__str__():
+                    assert 0 == self.test_add_shop_build_task(shopname, token)["code"]
+                    i = i+1
+                if i > 5:
+                    break
         # 审核建设任务
-        self.test_complete_shop_build_task(shopname, token)
-        status03 = self.test_query_shop_build_task(shopname, token)["data"]["list"][0]["taskStatus"]
-        assert status03 == 3
+
+        assert 0 == self.test_complete_shop_build_task(shopname, token)["code"]
+        print("网点审核建设任务通过")
+
         # 提交施工
-        self.test_shop_build_task_construction(shopname, token)
+        assert 0 == self.test_shop_build_task_construction(shopname, token)["code"]
+        print("网点提交施工成功")
+
         # 验收任务
-        self.test_check_shop_build_task(shopname, latitude, longitude, token)
+        try:
+            assert 0 == self.test_check_shop_build_task(shopname, latitude, longitude, token)["code"]
+        except Exception as e:
+            if '经纬度与现有网点重叠' in e.__str__():
+                assert 0 == self.test_check_shop_build_task(shopname, latitude, longitude, token)["code"]
+        print("网点验收通过")
+
         # 审核上线
-        self.test_shop_build_task_build_online(shopname, token)
+        assert 0 == self.test_shop_build_task_build_online(shopname, token)["code"]
+        print("网点上线审核通过")
 
 
 if __name__ == "__main__":
