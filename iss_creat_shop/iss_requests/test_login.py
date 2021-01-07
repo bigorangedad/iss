@@ -491,7 +491,7 @@ class TestLogin:
             status01 = self.test_query_shop_build_task(shopname, token)["data"]["list"][0]["taskStatus"]
             assert status01 == 1
         except Exception as e:
-
+            raise ValueError
         # 审核建设任务
         self.test_complete_shop_build_task(shopname, token)
         status03 = self.test_query_shop_build_task(shopname, token)["data"]["list"][0]["taskStatus"]
