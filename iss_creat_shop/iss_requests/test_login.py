@@ -1,5 +1,6 @@
 import json
 import random
+import re
 import time
 from logging import log
 import pytest
@@ -48,6 +49,7 @@ class TestLogin:
         except Exception as e:
             raise ValueError("requests token error")
 
+    @pytest.mark.parametrize('shopname', ["新增测试网点003"])
     def test_add_shop_build_task(self, shopname, token):
         """
         新增网点建设任务
@@ -474,9 +476,9 @@ class TestLogin:
         print(res.json())
 
     def test_creat_data(self):
-        data = [("新增测试网点00" + str(random.randint(0, 99)),
-                 str(random.randint(5, 89)) + "." + str(random.randint(100000, 999999)),
-                 str(random.randint(100, 179)) + "." + str(random.randint(100000, 999999))
+        data = [("新增测试网点" + str(random.randint(0, 10)),
+                 str(random.randint(33, 34)) + "." + str(random.randint(999998, 999999)),
+                 str(random.randint(123, 124)) + "." + str(random.randint(999998, 999999))
                  ) for x in range(1)]
         return data
 
@@ -487,31 +489,20 @@ class TestLogin:
     def test_all(self, shopname, latitude, longitude, token):
         # 新增网点建设任务
         try:
-            self.test_add_shop_build_task(shopname, token)
-            status01 = self.test_query_shop_build_task(shopname, token)["data"]["list"][0]["taskStatus"]
-            assert status01 == 1
+            assert 0 == self.test_add_shop_build_task(shopname, token)["code"]
         except Exception as e:
-            raise ValueError
+            while '网点名称已经存在' in e.__str__():
+                assert 0 == self.test_add_shop_build_task(shopname, token)["code"]
         # 审核建设任务
         self.test_complete_shop_build_task(shopname, token)
         status03 = self.test_query_shop_build_task(shopname, token)["data"]["list"][0]["taskStatus"]
         assert status03 == 3
-
         # 提交施工
         self.test_shop_build_task_construction(shopname, token)
-        status04 = self.test_query_shop_build_task(shopname, token)["data"]["list"][0]["taskStatus"]
-        # assert status04 == 4
         # 验收任务
         self.test_check_shop_build_task(shopname, latitude, longitude, token)
-        # time.sleep(2)
-        status06 = self.test_query_shop_build_task(shopname, token)["data"]["list"][0]["taskStatus"]
-        # assert status06 == 6
         # 审核上线
-        # print(log(level=1, msg=f"审核上线，网点名称:{shopname}"))
         self.test_shop_build_task_build_online(shopname, token)
-        # time.sleep(2)
-        status08 = self.test_query_shop_build_task(shopname, token)["data"]["list"][0]["taskStatus"]
-        # assert status08 == 8
 
 
 if __name__ == "__main__":
