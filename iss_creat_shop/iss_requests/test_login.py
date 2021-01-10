@@ -52,7 +52,7 @@ class TestLogin:
         except Exception as e:
             raise ValueError("requests token error")
 
-    @pytest.mark.parametrize('shopname', ["新增测试网点003"])
+    @pytest.mark.parametrize('shopname', ["新增测试网点999"])
     def test_add_shop_build_task(self, shopname, token):
         """
         新增网点建设任务
@@ -143,6 +143,7 @@ class TestLogin:
         res = requests.post(url=url, json=payload, headers=headers, cookies=cookies)
         print(f"result : {res.json()}")
         print(res.json())
+        return res.json()
 
     def test_query_shop_build_task_list(self, shopname, token):
         """
@@ -222,7 +223,7 @@ class TestLogin:
         print(shop_list)
         return shop_list
 
-    # @pytest.mark.parametrize()
+    @pytest.mark.parametrize("shopname", ["新增测试网点003"])
     def test_complete_shop_build_task(self, shopname, token):
         """
         审核建设任务通过
@@ -248,7 +249,7 @@ class TestLogin:
         res = requests.put(url=url + f"/{self.test_query_shop_build_task_list(shopname, token)['shop_build_id']}",
                            cookies=cookies,
                            headers=headers, data=json.dumps(payload))
-        print(res.json())
+        return res.json()
 
     def test_shop_build_task_construction(self, shopname, token):
         """
@@ -279,6 +280,7 @@ class TestLogin:
                            json=payload,
                            headers=headers, cookies=cookies)
         print(f"提交施工: {res.json()}")
+        return res.json()
 
     def test_check_shop_build_task(self, shopname, latitude, longitude, token):
         """
@@ -449,6 +451,7 @@ class TestLogin:
                            cookies=cookies, headers=headers,
                            json=payload)
         print(f"网点验收：{res.json()}")
+        return res.json()
 
     def test_shop_build_task_build_online(self, shopname, token):
         """
@@ -478,48 +481,51 @@ class TestLogin:
         }
         res = requests.post(url=url, headers=headers, cookies=cookies, json=payload)
         print(res.json())
+        return res.json()
 
     def test_creat_data(self):
-        data = [("新增测试网点" + str(random.randint(0, 10)),
-                 str(random.randint(33, 34)) + "." + str(random.randint(999998, 999999)),
-                 str(random.randint(123, 124)) + "." + str(random.randint(999998, 999999))
+        data = [("新增测试网点" + str(random.randint(10, 1000)),
+                 str(random.randint(20, 39)) + "." + str(random.randint(100000, 999999)),
+                 str(random.randint(115, 139)) + "." + str(random.randint(100000, 999999))
                  ) for x in range(1)]
         return data
 
     def test_mult_data(self):
-        pass
+        data = [(("新增测试网点" + "1%02d" % x),
+                 "30." + "1%05d" % x,
+                 "120.1%05d" % x
+                 ) for x in range(2)]
+        return data
 
-    @pytest.mark.parametrize(['shopname', 'latitude', 'longitude'], test_creat_data("xx"))
+    @pytest.mark.parametrize(['shopname', 'latitude', 'longitude'], test_mult_data("x"))
     def test_all(self, shopname, latitude, longitude, token):
         # 新增网点建设任务
+        # assert '0' == self.test_add_shop_build_task(shopname, token)["code"]
         try:
-            assert 0 == self.test_add_shop_build_task(shopname, token)["code"]
-        except Exception as e:
-            for i in range(0, 5):
-                while '网点名称已经存在' in e.__str__():
-                    assert 0 == self.test_add_shop_build_task(shopname, token)["code"]
-                    i = i+1
-                if i > 5:
-                    break
+            assert '0' == self.test_add_shop_build_task(shopname, token)["code"]
+        except AssertionError as e:
+            if "10020002" in e.__str__():
+                assert '0' == self.test_add_shop_build_task(shopname, token)["code"]
+        print(f"新增网点:{shopname}")
         # 审核建设任务
-
-        assert 0 == self.test_complete_shop_build_task(shopname, token)["code"]
+        assert '0' == self.test_complete_shop_build_task(shopname, token)["code"]
         print("网点审核建设任务通过")
 
         # 提交施工
-        assert 0 == self.test_shop_build_task_construction(shopname, token)["code"]
+        assert '0' == self.test_shop_build_task_construction(shopname, token)["code"]
         print("网点提交施工成功")
 
         # 验收任务
         try:
-            assert 0 == self.test_check_shop_build_task(shopname, latitude, longitude, token)["code"]
-        except Exception as e:
-            if '经纬度与现有网点重叠' in e.__str__():
-                assert 0 == self.test_check_shop_build_task(shopname, latitude, longitude, token)["code"]
+            assert '0' == self.test_check_shop_build_task(shopname, latitude, longitude, token)["code"]
+        except AssertionError as e:
+            if '10020009' in e.__str__():
+                assert '0' == self.test_check_shop_build_task(shopname, latitude, longitude, token)["code"]
+        print(f"经纬度为：{latitude}", f"{longitude}")
         print("网点验收通过")
 
         # 审核上线
-        assert 0 == self.test_shop_build_task_build_online(shopname, token)["code"]
+        assert '0' == self.test_shop_build_task_build_online(shopname, token)["code"]
         print("网点上线审核通过")
 
 
